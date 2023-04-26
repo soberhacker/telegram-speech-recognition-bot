@@ -4,11 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-aiohttp = "*"
-vosk = "*"
+aiohttp = "3.8.4"
+vosk = "0.3.45"
 aiogram = "==2.25.1"
+llvmlite = "*"
 openai-whisper = "*"
-llvmlite = "==0.39.1"
+
 
 [dev-packages]
 black = "*"
