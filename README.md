@@ -6,11 +6,11 @@ This Telegram bot is designed to convert voice messages into text using speech r
 
 - Supports English, Russian, Ukrainian, and Portuguese languages for speech recognition.
 - Allows users to choose the language of the voice message for accurate transcription.
-- Built on the Aiogram and Openai-Whisper libraries for efficient and easy-to-maintain code.
+- Built on the aiogram and [openAI-Whisper](https://github.com/openai/whisper) libraries for efficient and easy-to-maintain code.
 
 ## Installation
 
-1. Install [Python 3.10.10](https://www.python.org/downloads/release/python-31010/)
+1. Install [Python 3.10.10](https://www.python.org/downloads/release/python-31010/) and [FFmpeg](https://ffmpeg.org/download.html)
 
 2. Open console and clone the repository:
 
