@@ -148,6 +148,7 @@ cython_debug/
 vosk_models/
 config/dev/botToken.py
 config/prod/botToken.py
+*.session
 .idea
 .vscode
 .history

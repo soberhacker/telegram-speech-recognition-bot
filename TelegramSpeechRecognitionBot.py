@@ -9,9 +9,10 @@ from pathlib import Path
 from datetime import datetime as dt
 import time
 
+from pyrogram.client import Client
 from aiogram import Bot, Dispatcher, types
 from aiogram.dispatcher.filters import CommandStart, CommandHelp
-from aiogram.types import ContentType, Message
+from aiogram.types import ContentType, Message, File
 from aiogram.utils import executor
 from aiogram.dispatcher import FSMContext
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -29,14 +30,16 @@ parser.add_argument("-d", "--dev", help="Debug", action="store_true")
 args = parser.parse_args(sys.argv[1:])
 
 if args.dev:
-    from config.dev.botToken import API_TOKEN    
+    from config.dev.botToken import API_TOKEN, API_HASH, API_ID    
 
     logging.basicConfig(level=logging.DEBUG)
 else:
-    from config.prod.botToken import API_TOKEN    
+    from config.prod.botToken import API_TOKEN, API_HASH, API_ID    
 
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.ERROR, filename = 'bot.log', encoding = 'UTF-8', datefmt = '%Y-%m-%d %H:%M:%S')
 
+
+app = Client("speech_recognition_bot", api_id=API_ID, api_hash=API_HASH, bot_token=API_TOKEN)
 bot = Bot(token = API_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
@@ -90,41 +93,53 @@ async def process_language_choice(message: types.Message, state: FSMContext):
                 vosk_model = load_vosk_model(lang_code)
 
         voice_data = data['voice_data']        
-        file_full_path = voice_data['file_full_path']
+        file_audio_path = voice_data['file_audio_path']
 
         if config.speech_recognition_lib == 'whisper':
-            text = transcribe_whisper(whisper_model, file_full_path, language=lang_code)
-        else:            
-            
+            text = transcribe_whisper(whisper_model, file_audio_path, language=lang_code)
+        else:                        
             # Конвертирование файла в WAV 16000 Гц и одноканальный формат
-            converted_file_path = convert_to_wav(file_full_path)
+            converted_file_path = convert_to_wav(file_audio_path)
             text = transcribe_vosk(converted_file_path, vosk_model)
 
         with io.BytesIO(text.encode()) as file:
             file.name = voice_data['file_name']
             await message.reply_document(file, caption=text[0:1023])
 
-        await delete_file(file_full_path)
+        await delete_file(file_audio_path)
 
     await state.finish()
 
 
-@dp.message_handler(content_types=[ContentType.VOICE])
+@dp.message_handler(content_types=[ContentType.VOICE, ContentType.AUDIO])
 async def handle_voice_message(message: Message, state: FSMContext):
     logging.info
-    logging.info(f'Received voice message from @{message.from_user.username}')    
-
-    voice = await message.voice.get_file()
+    logging.info(f'Received voice message from @{message.from_user.username}')          
+    
+    if (message.content_type == ContentType.VOICE):
+        file_id = message.voice.file_id
+        file_type = ".ogg"        
+    else:
+        file_id = message.audio.file_id
+        file_type = message.audio.file_name                              
+        
     curr_date = dt.now().strftime('%Y%m%d%H%M%S') + str(message.message_id)
-    file_name = unique_filename(curr_date, temp_path) + '.md'
-    await handle_file(file=voice, file_name=file_name, path=temp_path)
-    file_full_path = os.path.join(temp_path, file_name)
+    file_name = unique_filename(curr_date, temp_path)
+    file_note_name = file_name  + file_type + '.md'
+    file_audio_name = file_name + file_type
+    
+    if (config.download_big_files == True):
+        await handle_big_file(file_id=file_id, file_name=file_audio_name, path=temp_path)        
+    else:
+        file = await bot.get_file(file_id)
+        await handle_file(file=file, file_name=file_audio_name, path=temp_path)        
+    file_audio_path = os.path.join(temp_path, file_audio_name)
 
     # save file path in state FSM
     async with state.proxy() as data:
         data['voice_data'] = {            
-            'file_name': file_name,
-            'file_full_path': file_full_path
+            'file_name': file_note_name,
+            'file_audio_path': file_audio_path
         }
 
     # Entering voice language
@@ -143,9 +158,14 @@ async def process_message(message: types.Message):
     
 
 # Functions
-async def handle_file(file, file_name: str, path: str):
+async def handle_file(file: File, file_name: str, path: str):
     Path(f"{path}").mkdir(parents=True, exist_ok=True)
     await bot.download_file(file_path=file.file_path, destination=f"{path}/{file_name}")
+
+async def handle_big_file(file_id, file_name: str, path: str):
+    Path(f"{path}").mkdir(parents=True, exist_ok=True)    
+    async with app:            
+        await app.download_media(file_id, file_name=f"{path}/{file_name}")            
 
 async def download(url, session: aiohttp.ClientSession) -> str:
     async with session.get(url) as response:

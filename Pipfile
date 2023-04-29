@@ -12,6 +12,8 @@ numba = "==0.56.4"
 numpy = "==1.23.5"
 openai-whisper = "*"
 setuptools-rust = "*"
+pyrogram = "*"
+tgcrypto = "*"
 
 [dev-packages]
 black = "*"
