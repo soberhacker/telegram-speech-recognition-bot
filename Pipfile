@@ -7,7 +7,9 @@ name = "pypi"
 aiohttp = "3.8.4"
 vosk = "0.3.45"
 aiogram = "==2.25.1"
-llvmlite = "*"
+llvmlite = "==0.39.1"
+numba = "==0.56.4"
+numpy = "==1.23.5"
 openai-whisper = "*"
 
 
