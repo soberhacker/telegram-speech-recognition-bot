@@ -30,16 +30,16 @@ parser.add_argument("-d", "--dev", help="Debug", action="store_true")
 args = parser.parse_args(sys.argv[1:])
 
 if args.dev:
-    from config.dev.botToken import API_TOKEN, API_HASH, API_ID    
+    from config.dev.botToken import API_TOKEN, API_HASH, API_ID, CLIENT_NAME    
 
     logging.basicConfig(level=logging.DEBUG)
 else:
-    from config.prod.botToken import API_TOKEN, API_HASH, API_ID    
+    from config.prod.botToken import API_TOKEN, API_HASH, API_ID, CLIENT_NAME   
 
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.ERROR, filename = 'bot.log', encoding = 'UTF-8', datefmt = '%Y-%m-%d %H:%M:%S')
 
 
-app = Client("speech_recognition_bot", api_id=API_ID, api_hash=API_HASH, bot_token=API_TOKEN)
+app = Client(name=CLIENT_NAME, api_id=API_ID, api_hash=API_HASH, bot_token=API_TOKEN)
 bot = Bot(token = API_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
